@@ -53,7 +53,7 @@ namespace SkinnerBox.States.Main
         {
             this.manager = manager;
             this.manager.backgroundColour = Color.White;
-            this.context = new WindowContext("You Are the Website", width: 640, height: 640, options: SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN); // Creates the window context.
+            this.context = new WindowContext("You Are the Website", width: 640, height: 640, options: SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN);
             this.assets = new AssetManager();
             this.assets.DefaultPathModifier = (p) => "resources/" + p;
             this.assets.Loaders.TryAdd("png", TextureLoader.Load2DTexture);
@@ -63,14 +63,19 @@ namespace SkinnerBox.States.Main
             this.renderer = new MeshBatchRenderer(camera);
 
             //Add additional states
-            manager.AddState(new GamePlayState(renderer, this.assets));
+            BitmapFont genericFont = new BitmapFont("resources/BigShouldersDisplay-Light.ttf");
+            genericFont.PixelsPerUnitHeight = 80;
+            genericFont.PixelsPerUnitWidth = 80;
+            genericFont.PixelHeight = 32;
+            manager.AddState(new GamePlayState(renderer, this.assets, genericFont));
 
             //Load assets
-            this.assets.Load("serverunit.png");
-            this.assets.Load("packet.png");
-            this.assets.Load("warning.png");
-            this.assets.Load("downloadbar.png");
-            this.assets.Load("drag.png");
+            assets.Load("serverunit.png");
+            assets.Load("packet.png");
+            assets.Load("warning.png");
+            assets.Load("downloadbar.png");
+            assets.Load("drag.png");
+            assets.Load("usage.png");
 
             //Set up title TTF
             this.titleFont = new BitmapFont("resources/BigShouldersDisplay-Regular.ttf", textureSizes: 512);

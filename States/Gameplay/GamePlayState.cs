@@ -13,6 +13,7 @@ using SlatedGameToolkit.Framework.StateSystem;
 using SlatedGameToolkit.Framework.StateSystem.States;
 using SlatedGameToolkit.Framework.Utilities.Collections.Pooling;
 using SlatedGameToolkit.Framework.Utilities;
+using SlatedGameToolkit.Framework.Graphics.Text;
 
 namespace SkinnerBox.States.Gameplay
 {
@@ -21,37 +22,52 @@ namespace SkinnerBox.States.Gameplay
         private MeshBatchRenderer renderer;
         private AssetManager assets;
         private StateManager stateManager;
+        private BitmapFont font;
         private Random random;
 
-        //Cursor information
-        private float widthFactor, heightFactor;
+        #region CursorVars
+        private float cursorWidthScale, cursorHeightScale;
         private float serverTargetPos; //Last left click position
+        private int viewHeight; // The viewports height for inverting Y value.
+        #endregion
 
-        //Entities
-        private ServerEntity server;
+        #region EntitiesVariables
+        private ServerEntity server; //The player
 
+        // Warning entities
         private ObjectPool<WarningEntity> warningPool;
         private List<WarningEntity> activeWarnings = new List<WarningEntity>();
 
+        // Packet entities
         private ObjectPool<PacketEntity> packetPool;
         private List<PacketEntity> activePackets = new List<PacketEntity>();
         private PacketSpawnInfo packetSpawnInfo;
         private const float packetSafeMargin = 1/2f;
 
+        //Download entities.
         private ObjectPool<DownloadEntity> downloadPool;
         private List<DownloadEntity> activeDownloads = new List<DownloadEntity>();
         private DownloadSpawnInfo downloadSpawnInfo;
         private const float downloadSafeMargin = 1.5f;
-        private int viewHeight;
+        #endregion
         
+        #region PlayerStats
+        private readonly int totalUsage = 3;
+        private int usedUsage = 0;
+        private RectangleMesh usageMesh;
+        private int score;
+        private float timeElapsed;
+        #endregion
 
-        public GamePlayState(MeshBatchRenderer renderer, AssetManager asset)
+        public GamePlayState(MeshBatchRenderer renderer, AssetManager asset, BitmapFont font)
         {
             this.assets = asset;
             this.renderer = renderer;
             packetPool = new ObjectPool<PacketEntity>(CreatePacket);
             warningPool = new ObjectPool<WarningEntity>(createWarning);
             downloadPool = new ObjectPool<DownloadEntity>(createDownload);
+            this.font = font;
+            font.PrepareCharacterGroup("score:0123456789timlapsd".ToCharArray());
         }
 
         public bool Activate()
@@ -60,6 +76,7 @@ namespace SkinnerBox.States.Gameplay
             Mouse.mouseUpdateEvent += MouseInput;
             serverTargetPos = 0.5f * Game.WIDTH_UNITS;
             server = new ServerEntity((Texture)assets["serverunit.png"], serverTargetPos, 0.1f);
+            usageMesh = new RectangleMesh(new RectangleF(0, Game.HEIGHT_UNITS - 0.75f, 0.5f, 0.5f), (ITexture)assets["usage.png"], Color.White);
             random = new Random();
 
             packetSpawnInfo = new PacketSpawnInfo(2, 1, (float)(random.NextDouble() * Game.WIDTH_UNITS), 1f, 0.2f, 3f);
@@ -102,25 +119,45 @@ namespace SkinnerBox.States.Gameplay
             int vw, vh, vx, vy;
             WindowContextsManager.CurrentGL.GetViewport(out vx, out vy, out vw, out vh);
             CalculateScaleFactors(vw, vh);
-
         }
 
         public void Render(double delta)
         {
             renderer.Begin(Matrix4x4.Identity, delta);
+            #region WarningRender
             foreach (WarningEntity warn in activeWarnings)
             {
                 renderer.Draw(warn);
             }
+            #endregion
+            #region PacketRender
             foreach (PacketEntity packet in activePackets)
             {
                 renderer.Draw(packet);
             }
+            #endregion
+            #region DownloadRender
             foreach(DownloadEntity download in activeDownloads) {
                 renderer.Draw(download);
                 renderer.Draw(download.progressMesh);
-            }
+            }                
+            #endregion
             renderer.Draw(server);
+
+            #region StatusRender
+                for (int i = 0; i < totalUsage; i++)
+                {
+                    usageMesh.X = 0.25f + (i * (usageMesh.Width + 0.2f));
+                    if (i >= usedUsage) {
+                        usageMesh.Color = Color.Yellow;
+                    } else {
+                        usageMesh.Color = Color.White;
+                    }
+                    renderer.Draw(usageMesh);
+                }
+
+                font.WriteLine(renderer, 0.05f, Game.HEIGHT_UNITS - 2f, "score: " + score, Color.Black);
+            #endregion
             renderer.End();
         }
 
@@ -128,7 +165,7 @@ namespace SkinnerBox.States.Gameplay
         {
             #region ServerUpdate
             if (Mouse.LeftButtonPressed) {
-                serverTargetPos = widthFactor * Mouse.X;
+                serverTargetPos = cursorWidthScale * Mouse.X;
             }
             
             if (serverTargetPos < server.CenterX)
@@ -174,7 +211,7 @@ namespace SkinnerBox.States.Gameplay
                 PacketEntity packet = activePackets[i];
                 packet.Update(timeStep);
                 if (packet.HitBox.IntersectsWith(server.HitBox) && packet.velocity > 0) {
-                    packet.velocity *= -2f;
+                    packet.velocity *= -2.5f;
                     packet.Color = Color.Cyan;
                 }
                 if (packet.Y <= 0 - packet.Height) {
@@ -199,11 +236,16 @@ namespace SkinnerBox.States.Gameplay
                     download.Size = (int)(downloadSpawnInfo.generalSize + ((random.NextDouble() - 1/2f) * 2f * downloadSpawnInfo.sizeRange));
                     download.X = (float)(random.NextDouble() * (Game.WIDTH_UNITS - download.Width));
                     download.Y = (float)(downloadSafeMargin + random.NextDouble() * (Game.HEIGHT_UNITS - 2 * downloadSafeMargin));
-                    download.mesh.X = download.X;
-                    download.mesh.Y = download.Y;
                     download.stepSize = downloadSpawnInfo.stepSize;
-                    download.health = downloadSpawnInfo.health;
+                    download.upTime = downloadSpawnInfo.upTime;
                     activeDownloads.Add(download);
+
+                    WarningEntity warning = warningPool.Retrieve();
+                    warning.CenterX = download.CenterX;
+                    warning.LifeTime = download.upTime * (1/3f);
+                    warning.Y = download.Y - warning.Height;
+                    warning.mesh.Y = warning.Y;
+                    activeWarnings.Add(warning);
                 }
             }
 
@@ -215,8 +257,8 @@ namespace SkinnerBox.States.Gameplay
                 download.timeElapsed.Value += (float)timeStep;
                 if (Mouse.RightButtonPressed) {
                     Vector2 rightMousePos;
-                    rightMousePos.X = widthFactor * Mouse.X;
-                    rightMousePos.Y = heightFactor * (viewHeight - Mouse.Y);
+                    rightMousePos.X = cursorWidthScale * Mouse.X;
+                    rightMousePos.Y = cursorHeightScale * (viewHeight - Mouse.Y);
                     if (download.HitBox.Contains(rightMousePos)) {
                         download.Input(rightMousePos.X - download.X);
                     }
@@ -227,15 +269,13 @@ namespace SkinnerBox.States.Gameplay
                     downloadPool.Release(download);
                     activeDownloads.RemoveAt(i);
                     i--;
-                    Console.WriteLine("YAY");
                     continue;
                 }
-                if (download.timeElapsed.Value >= download.health)
+                if (download.timeElapsed.Value >= download.upTime)
                 {
                     downloadPool.Release(download);
                     activeDownloads.RemoveAt(i);
                     i--;
-                    Console.WriteLine("AW");
                     continue;
                 }
             }
@@ -255,6 +295,31 @@ namespace SkinnerBox.States.Gameplay
         }
 
         public void KeyInputListener(SDL.SDL_Keycode keycode, bool down) {
+            if (!down) return;
+            if (keycode == SDL.SDL_Keycode.SDLK_a) {
+                if (usedUsage > 0 && server.Size > 1) {
+                    usedUsage--;
+                    server.Size--;
+                }
+            }
+            if (keycode == SDL.SDL_Keycode.SDLK_d) {
+                if (usedUsage < totalUsage) {
+                    usedUsage++;
+                    server.Size++;
+                }
+            }
+            if (keycode == SDL.SDL_Keycode.SDLK_s) {
+                if (usedUsage > 0 && server.Speed > ServerEntity.MIN_SPEED) {
+                    usedUsage--;
+                    server.Speed -= ServerEntity.SPEED_STEP;
+                }
+            }
+            if (keycode == SDL.SDL_Keycode.SDLK_w) {
+                if (usedUsage < totalUsage) {
+                    usedUsage++;
+                    server.Speed += ServerEntity.SPEED_STEP;
+                }
+            }
         }
 
         public void MouseInput(bool leftDown, bool rightDown, bool middle, int x, int y, int scrollX, int scrollY) {
@@ -270,8 +335,8 @@ namespace SkinnerBox.States.Gameplay
 
         private void CalculateScaleFactors(int width, int height) {
             viewHeight = height;
-            this.widthFactor = Game.WIDTH_UNITS * (1f / width);
-            this.heightFactor = Game.HEIGHT_UNITS * (1f / height);
+            this.cursorWidthScale = Game.WIDTH_UNITS * (1f / width);
+            this.cursorHeightScale = Game.HEIGHT_UNITS * (1f / height);
         }
     }
 }

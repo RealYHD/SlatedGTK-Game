@@ -1,5 +1,7 @@
 ﻿using SkinnerBox.States.Main;
+using SkinnerBox.Utilities;
 using SlatedGameToolkit.Framework;
+using SlatedGameToolkit.Framework.Logging;
 
 namespace SkinnerBox
 {
@@ -11,6 +13,7 @@ namespace SkinnerBox
         {
             GameEngine.targetFPS = 0;
             GameEngine.UpdatesPerSecond = 20;
+            Logger.AddLogListener(new ConsoleLogger());
             GameEngine.Ignite(new MenuState());
         }
 

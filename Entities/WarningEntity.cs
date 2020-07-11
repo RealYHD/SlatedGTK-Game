@@ -12,8 +12,8 @@ namespace SkinnerBox.Entities
         public TransitionValue aliveTime;
 
         public WarningEntity(ITexture texture) : base(texture) {
-            this.Width = 2;
-            this.Height = 2;
+            this.Width = 1f;
+            this.Height = 1f;
             Reset();
         }
         public void Reset()
@@ -21,7 +21,7 @@ namespace SkinnerBox.Entities
             LifeTime = 0;
             X = 0 - Width;
             mesh.X = X;
-            Y = Game.HEIGHT_UNITS - Height;
+            Y = - Height;
             mesh.Y = Y;
             aliveTime.HardSet(0);
             this.Color = Color.Red;

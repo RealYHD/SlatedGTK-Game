@@ -14,7 +14,7 @@ namespace SkinnerBox.Entities
         public TransitionValue progressValue;
         public RectangleMesh progressMesh;
         public TransitionValue timeElapsed;
-        public float health;
+        public float upTime;
         int size;
         public int Size {
             get {
@@ -30,7 +30,7 @@ namespace SkinnerBox.Entities
         public override RectangleF HitBox {
             get {
                 RectangleF rect = base.HitBox;
-                rect.Width = Width * size;
+                rect.Width = Width + 0.5f;
                 return rect;
             }
         }
@@ -53,15 +53,11 @@ namespace SkinnerBox.Entities
         public void Reset()
         {
             Size = 1;
-            X = 0;
-            Y = 0;
-            mesh.X = X;
-            mesh.Y = Y;
             progressValue.HardSet(0);
             timeElapsed.HardSet(0);
             stepSize = 0;
-            health = 0;
-            Color = Color.DarkCyan;
+            upTime = 0;
+            Color = Color.Cyan;
             UpdateProgressMesh();
         }
 
@@ -75,11 +71,13 @@ namespace SkinnerBox.Entities
         public override void InterpolatePosition(float delta) {
             progressValue.InterpolatePosition(delta);
             timeElapsed.InterpolatePosition(delta);
-            float prog = timeElapsed.Value / health;
+            float prog = timeElapsed.Value / upTime;
             if (prog > 1) prog = 1;
             if (prog < 0) prog = 0;
             this.Color = Color.FromArgb((int)(byte.MaxValue * (1f - prog)), Color);
+            progressMesh.Color = Color.FromArgb((int)(byte.MaxValue * (1f - prog)), progressMesh.Color);
             UpdateProgressMesh();
+            base.InterpolatePosition(delta);
         }
     }
 
@@ -87,7 +85,7 @@ namespace SkinnerBox.Entities
     {
         public float period;
         public float elapsedSinceSpawn;
-        public float health;
+        public float upTime;
         public float stepSize;
         public int maximumAmount;
         public int generalSize;
@@ -97,7 +95,7 @@ namespace SkinnerBox.Entities
         {
             this.period = cooldown;
             this.elapsedSinceSpawn = 0;
-            this.health = health;
+            this.upTime = health;
             this.stepSize = stepSize;
             this.maximumAmount = maxAmount;
             this.sizeRange = sizeRange;

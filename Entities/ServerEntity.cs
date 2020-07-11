@@ -7,6 +7,8 @@ namespace SkinnerBox.Entities
 {
     public class ServerEntity : Entity
     {
+        public const float MIN_SPEED = 1f;
+        public const float SPEED_STEP = 1f;
         private readonly float length = 4/8f;
         public float Speed { get; set; }
         public override float CenterX {
@@ -35,7 +37,7 @@ namespace SkinnerBox.Entities
         public override RectangleF HitBox {
             get {
                 RectangleF hitbox = base.HitBox;
-                hitbox.Width = hitbox.Width * size;
+                hitbox.Width = Width;
                 return hitbox;
             }
         }
@@ -46,7 +48,7 @@ namespace SkinnerBox.Entities
 
             Size = 1;
             
-            this.Speed = 2f;
+            this.Speed = MIN_SPEED;
 
             CenterX = initialX;
             mesh.X = X;
