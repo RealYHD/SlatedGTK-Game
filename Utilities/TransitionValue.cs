@@ -18,6 +18,12 @@ namespace SkinnerBox.Utilities.Gameplay
                 this.value = value;
             }
         }
+
+        public float DesignatedValue {
+            get {
+                return value;
+            }
+        }
         public void InterpolatePosition(float delta)
         {
             this.current += (value - current) * delta;

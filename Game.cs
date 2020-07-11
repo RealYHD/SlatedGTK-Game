@@ -1,11 +1,5 @@
-﻿using System;
-using SkinnerBox.States.Gameplay;
-using SkinnerBox.States.Main;
+﻿using SkinnerBox.States.Main;
 using SlatedGameToolkit.Framework;
-using SlatedGameToolkit.Framework.AssetSystem;
-using SlatedGameToolkit.Framework.Graphics;
-using SlatedGameToolkit.Framework.Graphics.Window;
-using SlatedGameToolkit.Framework.Loaders;
 
 namespace SkinnerBox
 {

@@ -12,6 +12,7 @@ using SlatedGameToolkit.Framework.Input.Devices;
 using SlatedGameToolkit.Framework.StateSystem;
 using SlatedGameToolkit.Framework.StateSystem.States;
 using SlatedGameToolkit.Framework.Utilities.Collections.Pooling;
+using SlatedGameToolkit.Framework.Utilities;
 
 namespace SkinnerBox.States.Gameplay
 {
@@ -24,8 +25,7 @@ namespace SkinnerBox.States.Gameplay
 
         //Cursor information
         private float widthFactor, heightFactor;
-        private float leftXPos; //Last left click position
-
+        private float serverTargetPos; //Last left click position
 
         //Entities
         private ServerEntity server;
@@ -35,7 +35,15 @@ namespace SkinnerBox.States.Gameplay
 
         private ObjectPool<PacketEntity> packetPool;
         private List<PacketEntity> activePackets = new List<PacketEntity>();
-        private SpawnInfo packetSpawnInfo;
+        private PacketSpawnInfo packetSpawnInfo;
+        private const float packetSafeMargin = 1/2f;
+
+        private ObjectPool<DownloadEntity> downloadPool;
+        private List<DownloadEntity> activeDownloads = new List<DownloadEntity>();
+        private DownloadSpawnInfo downloadSpawnInfo;
+        private const float downloadSafeMargin = 1.5f;
+        private int viewHeight;
+        
 
         public GamePlayState(MeshBatchRenderer renderer, AssetManager asset)
         {
@@ -43,17 +51,19 @@ namespace SkinnerBox.States.Gameplay
             this.renderer = renderer;
             packetPool = new ObjectPool<PacketEntity>(CreatePacket);
             warningPool = new ObjectPool<WarningEntity>(createWarning);
+            downloadPool = new ObjectPool<DownloadEntity>(createDownload);
         }
 
         public bool Activate()
         {
             Keyboard.keyboardUpdateEvent += KeyInputListener;
             Mouse.mouseUpdateEvent += MouseInput;
-            leftXPos = 0.5f * Game.WIDTH_UNITS;
-            server = new ServerEntity((Texture)assets["serverunit.png"], leftXPos, 0.1f);
+            serverTargetPos = 0.5f * Game.WIDTH_UNITS;
+            server = new ServerEntity((Texture)assets["serverunit.png"], serverTargetPos, 0.1f);
             random = new Random();
 
-            packetSpawnInfo = new SpawnInfo(2, 1, (float)(random.NextDouble() * Game.WIDTH_UNITS), 1f, 0.2f);
+            packetSpawnInfo = new PacketSpawnInfo(2, 1, (float)(random.NextDouble() * Game.WIDTH_UNITS), 1f, 0.2f, 3f);
+            downloadSpawnInfo = new DownloadSpawnInfo(4, 6, 3, 1, 4, 2);
             return true;
         }
 
@@ -63,6 +73,10 @@ namespace SkinnerBox.States.Gameplay
 
         public WarningEntity createWarning() {
             return new WarningEntity((Texture)assets["warning.png"]);
+        }
+
+        public DownloadEntity createDownload() {
+            return new DownloadEntity((Texture)assets["drag.png"], (Texture)assets["downloadbar.png"]);
         }
 
         public bool Deactivate()
@@ -102,6 +116,10 @@ namespace SkinnerBox.States.Gameplay
             {
                 renderer.Draw(packet);
             }
+            foreach(DownloadEntity download in activeDownloads) {
+                renderer.Draw(download);
+                renderer.Draw(download.progressMesh);
+            }
             renderer.Draw(server);
             renderer.End();
         }
@@ -110,17 +128,17 @@ namespace SkinnerBox.States.Gameplay
         {
             #region ServerUpdate
             if (Mouse.LeftButtonPressed) {
-                leftXPos = widthFactor * Mouse.X;
+                serverTargetPos = widthFactor * Mouse.X;
             }
             
-            if (leftXPos < server.CenterX)
+            if (serverTargetPos < server.CenterX)
             {
                 server.CenterX -= ((float)timeStep * server.Speed);
-                if (server.CenterX < leftXPos) server.CenterX = leftXPos;
-            } else if (leftXPos > server.CenterX) 
+                if (server.CenterX < serverTargetPos) server.CenterX = serverTargetPos;
+            } else if (serverTargetPos > server.CenterX) 
             {
                 server.CenterX += ((float)timeStep * server.Speed);
-                if (server.X > leftXPos) server.CenterX = leftXPos;
+                if (server.X > serverTargetPos) server.CenterX = serverTargetPos;
             }                
             #endregion
             #region PacketUpdate
@@ -145,7 +163,10 @@ namespace SkinnerBox.States.Gameplay
                 activeWarnings.Add(warning);
 
                 //Prepare next batch
-                packetSpawnInfo.batchLocation = (float)(random.NextDouble() * Game.WIDTH_UNITS);
+                packetSpawnInfo.batchLocation = (float)(packetSpawnInfo.batchLocation + (random.NextDouble() - 1/2f) * packetSpawnInfo.jumpDistance * 2);
+                if (packetSpawnInfo.batchLocation > Game.WIDTH_UNITS - packetSafeMargin) {
+                    packetSpawnInfo.batchLocation = Game.WIDTH_UNITS - packetSafeMargin;
+                } else if (packetSpawnInfo.batchLocation < packetSafeMargin) packetSpawnInfo.batchLocation = packetSafeMargin;
             }
 
             for (int i = 0; i < activePackets.Count; i++)
@@ -166,6 +187,56 @@ namespace SkinnerBox.States.Gameplay
                     packetPool.Release(packet);
                     activePackets.RemoveAt(i);
                     i--;
+                }
+            }
+            #endregion
+            #region DownloadUpdate
+            downloadSpawnInfo.elapsedSinceSpawn += (float)timeStep;
+            if (downloadSpawnInfo.elapsedSinceSpawn >= downloadSpawnInfo.period) {
+                downloadSpawnInfo.elapsedSinceSpawn = 0;
+                if (activeDownloads.Count < downloadSpawnInfo.maximumAmount) {
+                    DownloadEntity download = downloadPool.Retrieve();
+                    download.Size = (int)(downloadSpawnInfo.generalSize + ((random.NextDouble() - 1/2f) * 2f * downloadSpawnInfo.sizeRange));
+                    download.X = (float)(random.NextDouble() * (Game.WIDTH_UNITS - download.Width));
+                    download.Y = (float)(downloadSafeMargin + random.NextDouble() * (Game.HEIGHT_UNITS - 2 * downloadSafeMargin));
+                    download.mesh.X = download.X;
+                    download.mesh.Y = download.Y;
+                    download.stepSize = downloadSpawnInfo.stepSize;
+                    download.health = downloadSpawnInfo.health;
+                    activeDownloads.Add(download);
+                }
+            }
+
+
+            for (int i = 0; i < activeDownloads.Count; i++)
+            {
+                DownloadEntity download = activeDownloads[i];
+
+                download.timeElapsed.Value += (float)timeStep;
+                if (Mouse.RightButtonPressed) {
+                    Vector2 rightMousePos;
+                    rightMousePos.X = widthFactor * Mouse.X;
+                    rightMousePos.Y = heightFactor * (viewHeight - Mouse.Y);
+                    if (download.HitBox.Contains(rightMousePos)) {
+                        download.Input(rightMousePos.X - download.X);
+                    }
+                }
+                
+                if (download.progressValue.Value >= download.Width)
+                {
+                    downloadPool.Release(download);
+                    activeDownloads.RemoveAt(i);
+                    i--;
+                    Console.WriteLine("YAY");
+                    continue;
+                }
+                if (download.timeElapsed.Value >= download.health)
+                {
+                    downloadPool.Release(download);
+                    activeDownloads.RemoveAt(i);
+                    i--;
+                    Console.WriteLine("AW");
+                    continue;
                 }
             }
             #endregion
@@ -197,7 +268,8 @@ namespace SkinnerBox.States.Gameplay
             CalculateScaleFactors(vw, vh);
         }
 
-        private void CalculateScaleFactors(float width, float height) {
+        private void CalculateScaleFactors(int width, int height) {
+            viewHeight = height;
             this.widthFactor = Game.WIDTH_UNITS * (1f / width);
             this.heightFactor = Game.HEIGHT_UNITS * (1f / height);
         }

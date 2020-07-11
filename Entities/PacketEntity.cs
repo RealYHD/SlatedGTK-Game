@@ -28,6 +28,28 @@ namespace SkinnerBox.Entities
         public void Update(double delta) {
             this.Y -= (float)(velocity * delta);
         }
+    }
 
+    public struct PacketSpawnInfo
+    {
+        public float timeElapsed;
+        public int period;
+        public int perSpawn;
+        public float batchLocation;
+        public float distanceBetween;
+        public float jumpDistance;
+        public float speed;
+        public float lastSpawnLocation;
+
+        public PacketSpawnInfo(int period, int perSpawn, float location, float speed, float distance, float jump) {
+            timeElapsed = 0;
+            lastSpawnLocation = 0;
+            this.period = period;
+            this.perSpawn = perSpawn;
+            this.batchLocation = location;
+            this.distanceBetween = distance;
+            this.speed = speed;
+            this.jumpDistance = jump;
+        }
     }
 }

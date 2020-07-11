@@ -69,6 +69,8 @@ namespace SkinnerBox.States.Main
             this.assets.Load("serverunit.png");
             this.assets.Load("packet.png");
             this.assets.Load("warning.png");
+            this.assets.Load("downloadbar.png");
+            this.assets.Load("drag.png");
 
             //Set up title TTF
             this.titleFont = new BitmapFont("resources/BigShouldersDisplay-Regular.ttf", textureSizes: 512);
