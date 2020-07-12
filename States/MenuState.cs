@@ -24,7 +24,8 @@ namespace SkinnerBox.States
         MeshBatchRenderer renderer;
         BitmapFont titleFont, boldFont;
         RectangleMesh serverUnit;
-        
+        private BitmapFont genericFont;
+
         public bool Activate()
         {
             Keyboard.keyboardUpdateEvent += KeyInput;
@@ -45,6 +46,9 @@ namespace SkinnerBox.States
 
         public void Deinitialize()
         {
+            titleFont.Dispose();
+            boldFont.Dispose();
+            genericFont.Dispose();
             this.renderer.Dispose();
             this.assets.UnloadAll();
         }
@@ -71,7 +75,7 @@ namespace SkinnerBox.States
             this.titleFont = new BitmapFont("resources/BigShouldersDisplay-Regular.ttf", textureSizes: 512);
             this.titleFont.PixelsPerUnitHeight = 80;
             this.titleFont.PixelsPerUnitWidth = 80;
-            BitmapFont genericFont = new BitmapFont("resources/BigShouldersDisplay-Light.ttf");
+            genericFont = new BitmapFont("resources/BigShouldersDisplay-Light.ttf");
             genericFont.PixelsPerUnitHeight = 80;
             genericFont.PixelsPerUnitWidth = 80;
             //Add additional states

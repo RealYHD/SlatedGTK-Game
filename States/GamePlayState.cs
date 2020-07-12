@@ -51,13 +51,16 @@ namespace SkinnerBox.States
         private List<DownloadEntity> activeDownloads = new List<DownloadEntity>();
         private DownloadSpawnInfo downloadSpawnInfo;
         private const float downloadSafeMargin = 1.5f;
-        #endregion
 
         //DDOS entities.
         private ObjectPool<DDOSEntity> ddosPool;
         private List<DDOSEntity> activeDDOS = new List<DDOSEntity>();
         private DDOSSPawnInfo dDOSSpawnInfo;
-        
+        #endregion
+
+        #region PauseManagement
+            bool paused = false;
+        #endregion
         #region PlayerStats
         private int speedBoost = 0;
         private int bandwithBoost = 0;
@@ -113,6 +116,8 @@ namespace SkinnerBox.States
 
             this.font.PixelHeight = 32;
             font.PrepareCharacterGroup("Score:0123456789Uptim.%".ToCharArray());
+            this.font.PixelHeight = 64;
+            font.PrepareCharacterGroup("Paused...".ToCharArray());
 
             activePackets.Clear();
             activeWarnings.Clear();
@@ -162,11 +167,21 @@ namespace SkinnerBox.States
             CalculateScaleFactors(vw, vh);
 
             WindowContextsManager.CurrentWindowContext.resizeEvent += WindowResize;
+            WindowContextsManager.CurrentWindowContext.focusGainedEvent += Focused;
+            WindowContextsManager.CurrentWindowContext.focusLostEvent += UnFocused;
         }
 
         public void Render(double delta)
         {
             renderer.Begin(Matrix4x4.Identity, delta);
+            #region PauseHandling
+            if (paused) {
+                font.PixelHeight = 64;
+                font.WriteLine(renderer, Game.WIDTH_UNITS / 2f - 1f, Game.HEIGHT_UNITS / 2f, "Paused.", Color.Purple);
+                renderer.End();
+                return;
+            }
+            #endregion
             #region WarningRender
             foreach (WarningEntity warn in activeWarnings)
             {
@@ -193,6 +208,7 @@ namespace SkinnerBox.States
             }
             #endregion
             #region StatusRender
+            font.PixelHeight = 32;
                 for (int i = 0; i < bandwithBoost + speedBoost; i++)
                 {
                     if (i < bandwithBoost) {
@@ -218,6 +234,10 @@ namespace SkinnerBox.States
 
         public void Update(double timeStep)
         {
+            if (paused) {
+                return;
+            }
+
             timeElapsed.Value = (float)timeStep + timeElapsed.DesignatedValue;
             score += (float) timeStep * 0.5f;
             #region ServerUpdate
@@ -482,6 +502,14 @@ namespace SkinnerBox.States
             viewHeight = height;
             this.cursorWidthScale = Game.WIDTH_UNITS * (1f / width);
             this.cursorHeightScale = Game.HEIGHT_UNITS * (1f / height);
+        }
+
+        public void Focused() {
+            this.paused = false;
+        }
+
+        public void UnFocused() {
+            this.paused = true;
         }
     }
 }

@@ -97,7 +97,7 @@ namespace SkinnerBox.States
 
         public void Deinitialize()
         {
-
+            font.Dispose();
         }
 
         public string getName()
