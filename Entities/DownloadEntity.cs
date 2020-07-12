@@ -57,7 +57,7 @@ namespace SkinnerBox.Entities
             timeElapsed.HardSet(0);
             stepSize = 0;
             upTime = 0;
-            Color = Color.Cyan;
+            Color = Color.Black;
             UpdateProgressMesh();
         }
 
@@ -72,8 +72,15 @@ namespace SkinnerBox.Entities
             progressValue.InterpolatePosition(delta);
             timeElapsed.InterpolatePosition(delta);
             float prog = timeElapsed.Value / upTime;
-            if (prog > 1) prog = 1;
-            if (prog < 0) prog = 0;
+            if (upTime != 0) {
+                if (prog > 1) {
+                    prog = 1;
+                } else if (prog < 0) {
+                    prog = 0;
+                }
+            } else {
+                prog = 1;
+            }
             this.Color = Color.FromArgb((int)(byte.MaxValue * (1f - prog)), Color);
             progressMesh.Color = Color.FromArgb((int)(byte.MaxValue * (1f - prog)), progressMesh.Color);
             UpdateProgressMesh();

@@ -160,6 +160,8 @@ namespace SkinnerBox.States
             int vw, vh, vx, vy;
             WindowContextsManager.CurrentGL.GetViewport(out vx, out vy, out vw, out vh);
             CalculateScaleFactors(vw, vh);
+
+            WindowContextsManager.CurrentWindowContext.resizeEvent += WindowResize;
         }
 
         public void Render(double delta)
@@ -243,7 +245,6 @@ namespace SkinnerBox.States
                     packet.CenterX = packetSpawnInfo.batchLocation;
                     packet.Y = i * packet.Height + packetSpawnInfo.range + Game.HEIGHT_UNITS + packetSpawnInfo.speed;
                     packet.velocity = packetSpawnInfo.speed;
-                    packet.Color = Color.Blue;
                     totalPackets++;
                     activePackets.Add(packet);
                 }
@@ -270,7 +271,7 @@ namespace SkinnerBox.States
                 packet.Update(timeStep);
                 if (packet.HitBox.IntersectsWith(server.HitBox) && packet.velocity > 0) {
                     packet.velocity *= -2.5f;
-                    packet.Color = Color.Cyan;
+                    packet.Color = Color.Gray;
                 }
                 if (packet.Y <= 0 - packet.Height) {
                     health -= 0.25f;
@@ -407,9 +408,9 @@ namespace SkinnerBox.States
             //packet curve
             packetSpawnInfo.perSpawn = (int)(0.5f * (Math.Pow(timeElapsed.Value, 0.5f) + 1));
             packetSpawnInfo.speed = (float)((0.025f * Math.Pow(timeElapsed.Value, 1.1f)) + 1f);
-            if (packetSpawnInfo.jumpDistance < 2f) {
-                packetSpawnInfo.jumpDistance = (float)(0.0023f * (Math.Pow(timeElapsed.Value, 1.15f)) + 0.75f);
-                if (packetSpawnInfo.jumpDistance > 2f) packetSpawnInfo.jumpDistance = 2f;
+            if (packetSpawnInfo.jumpDistance < 2.2f) {
+                packetSpawnInfo.jumpDistance = (float)(0.0023f * (Math.Pow(timeElapsed.Value, 1.15f)) + 1f);
+                if (packetSpawnInfo.jumpDistance > 2.2f) packetSpawnInfo.jumpDistance = 2.2f;
             }
             if (packetSpawnInfo.interval > 0f) {
                 packetSpawnInfo.interval = (float) (-0.0075 * timeElapsed.Value) + 2f;

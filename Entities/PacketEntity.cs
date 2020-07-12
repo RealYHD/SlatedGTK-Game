@@ -1,5 +1,5 @@
 using System;
-using System.Numerics;
+using System.Drawing;
 using SlatedGameToolkit.Framework.Graphics.Render;
 using SlatedGameToolkit.Framework.Graphics.Textures;
 using SlatedGameToolkit.Framework.Utilities.Collections.Pooling;
@@ -23,6 +23,7 @@ namespace SkinnerBox.Entities
             this.velocity = 0;
             this.X = 0;
             this.mesh.X = this.X;
+            Color = Color.Black;
         }
 
         public void Update(double delta) {

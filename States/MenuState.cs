@@ -78,6 +78,7 @@ namespace SkinnerBox.States
             GameOverState gameOverState = new GameOverState(genericFont, titleFont, renderer, assets);
             manager.AddState(gameOverState);
             manager.AddState(new GamePlayState(renderer, this.assets, genericFont, gameOverState));
+            manager.AddState(new TutorialState(renderer, assets));
 
             //Load assets
             assets.Load("serverunit.png");
@@ -129,7 +130,7 @@ namespace SkinnerBox.States
         {
             if (!pressed && keys == SDL.SDL_Keycode.SDLK_SPACE)
             {
-                manager.ChangeState("GamePlayState");
+                manager.ChangeState("Tutorial");
             }
         }
     }
