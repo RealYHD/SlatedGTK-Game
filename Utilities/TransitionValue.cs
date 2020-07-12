@@ -1,6 +1,6 @@
 using SlatedGameToolkit.Framework.Graphics.Render;
 
-namespace SkinnerBox.Utilities
+namespace WebsiteSim.Utilities
 {
     public struct TransitionValue : IPositionInterpolable
     {

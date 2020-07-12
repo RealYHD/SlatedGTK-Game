@@ -9,7 +9,7 @@ using SlatedGameToolkit.Framework.Input.Devices;
 using SlatedGameToolkit.Framework.StateSystem;
 using SlatedGameToolkit.Framework.StateSystem.States;
 
-namespace SkinnerBox.States
+namespace WebsiteSim.States
 {
     public class GameOverState : IState
     {

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
 using SDL2;
-using SkinnerBox.Entities;
+using WebsiteSim.Entities;
 using SlatedGameToolkit.Framework.AssetSystem;
 using SlatedGameToolkit.Framework.Graphics.Render;
 using SlatedGameToolkit.Framework.Graphics.Text;
@@ -13,7 +13,7 @@ using SlatedGameToolkit.Framework.StateSystem;
 using SlatedGameToolkit.Framework.StateSystem.States;
 using SlatedGameToolkit.Framework.Utilities.Collections.Pooling;
 
-namespace SkinnerBox.States
+namespace WebsiteSim.States
 {
     public class TutorialState : IState
     {
@@ -55,7 +55,7 @@ namespace SkinnerBox.States
             font.PixelHeight = 48;
             font.PixelsPerUnitHeight = 80;
             font.PixelsPerUnitWidth = 80;
-            font.PrepareCharacterGroup("abcdefghijklmnopqrstuvwy.:MSHIP+,DTY\'!".ToCharArray());
+            font.PrepareCharacterGroup("abcdefghijklmnopqrstuvwy.:MSHIP+,DTY\'!DDOSB".ToCharArray());
             this.renderer = renderer;
         }
 
@@ -149,6 +149,7 @@ namespace SkinnerBox.States
             font.WriteLine(renderer, 0.1f, Game.HEIGHT_UNITS - 2.5f, "Hit the packets and serve the downloads.", Color.Purple);
             font.WriteLine(renderer, 0.1f, Game.HEIGHT_UNITS - 3.0f, "Press shift + space to continue to game!", Color.DarkOrange);
             font.WriteLine(renderer, 0.1f, Game.HEIGHT_UNITS - 5f, "If a download fades, or\n packets pass the server, \nthe users will be disappointed!", Color.Black);
+            font.WriteLine(renderer, 0.1f, 1, "Beware of the DDOS...", Color.Gray);            
             #endregion
             renderer.End();
         }
@@ -233,14 +234,14 @@ namespace SkinnerBox.States
                 serverTargetPos = cursorWidthScale * Mouse.X;
             }
             
-            if (serverTargetPos < serverEntity.CenterX)
+            if (serverTargetPos < server.CenterX - 0.02f)
             {
-                serverEntity.CenterX -= ((float)timeStep * serverEntity.Speed);
-                if (serverEntity.CenterX < serverTargetPos) serverEntity.CenterX = serverTargetPos;
-            } else if (serverTargetPos > serverEntity.CenterX) 
+                server.CenterX -= ((float)timeStep * server.Speed);
+                if (server.CenterX < serverTargetPos - 0.02f) server.CenterX = serverTargetPos - 0.02f;
+            } else if (serverTargetPos > server.CenterX + 0.02f)
             {
-                serverEntity.CenterX += ((float)timeStep * serverEntity.Speed);
-                if (serverEntity.X > serverTargetPos) serverEntity.CenterX = serverTargetPos;
+                server.CenterX += ((float)timeStep * server.Speed);
+                if (server.CenterX > serverTargetPos + 0.02f) server.CenterX = serverTargetPos + 0.02f;
             }                
             #endregion
             #region WarningCleanup

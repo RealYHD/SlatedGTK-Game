@@ -1,10 +1,10 @@
 using System.Drawing;
-using SkinnerBox.Utilities;
+using WebsiteSim.Utilities;
 using SlatedGameToolkit.Framework.Graphics.Render;
 using SlatedGameToolkit.Framework.Graphics.Textures;
 using SlatedGameToolkit.Framework.Utilities.Collections.Pooling;
 
-namespace SkinnerBox.Entities
+namespace WebsiteSim.Entities
 {
     public class DownloadEntity : Entity, IPoolable
     {

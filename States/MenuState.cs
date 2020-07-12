@@ -13,7 +13,7 @@ using SlatedGameToolkit.Framework.Loaders;
 using SlatedGameToolkit.Framework.StateSystem;
 using SlatedGameToolkit.Framework.StateSystem.States;
 
-namespace SkinnerBox.States
+namespace WebsiteSim.States
 {
     public class MenuState : IState
     {

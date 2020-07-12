@@ -1,9 +1,9 @@
-﻿using SkinnerBox.States;
-using SkinnerBox.Utilities;
-using SlatedGameToolkit.Framework;
+﻿using SlatedGameToolkit.Framework;
 using SlatedGameToolkit.Framework.Logging;
+using WebsiteSim.States;
+using WebsiteSim.Utilities;
 
-namespace SkinnerBox
+namespace WebsiteSim
 {
     class Game
     {
@@ -11,7 +11,7 @@ namespace SkinnerBox
         public const int HEIGHT_UNITS = 8;
         static void Main(string[] args)
         {
-            GameEngine.targetFPS = 0;
+            GameEngine.targetFPS = 120;
             GameEngine.UpdatesPerSecond = 40;
             Logger.AddLogListener(new ConsoleLogger());
             GameEngine.Ignite(new MenuState());

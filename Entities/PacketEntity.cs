@@ -4,7 +4,7 @@ using SlatedGameToolkit.Framework.Graphics.Render;
 using SlatedGameToolkit.Framework.Graphics.Textures;
 using SlatedGameToolkit.Framework.Utilities.Collections.Pooling;
 
-namespace SkinnerBox.Entities
+namespace WebsiteSim.Entities
 {
     public class PacketEntity : Entity, IPositionInterpolable, IPoolable
     {

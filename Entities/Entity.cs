@@ -3,7 +3,7 @@ using System.Numerics;
 using SlatedGameToolkit.Framework.Graphics.Render;
 using SlatedGameToolkit.Framework.Graphics.Textures;
 
-namespace SkinnerBox.Entities
+namespace WebsiteSim.Entities
 {
     public abstract class Entity : IMesh, IPositionInterpolable
     {

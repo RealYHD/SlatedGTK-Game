@@ -1,10 +1,10 @@
-using SkinnerBox.Utilities;
+using WebsiteSim.Utilities;
 using SlatedGameToolkit.Framework.Graphics.Textures;
 using SlatedGameToolkit.Framework.Utilities.Collections.Pooling;
 using System;
 using System.Drawing;
 
-namespace SkinnerBox.Entities
+namespace WebsiteSim.Entities
 {
     public class WarningEntity : Entity, IPoolable
     {

@@ -1,7 +1,7 @@
 using SlatedGameToolkit.Framework.Graphics.Textures;
 using SlatedGameToolkit.Framework.Utilities.Collections.Pooling;
 using System.Drawing;
-namespace SkinnerBox.Entities
+namespace WebsiteSim.Entities
 {
     public class DDOSEntity : Entity, IPoolable
     {

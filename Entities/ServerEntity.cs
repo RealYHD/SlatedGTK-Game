@@ -3,7 +3,7 @@ using SlatedGameToolkit.Framework.Graphics.Render;
 using SlatedGameToolkit.Framework.Graphics.Textures;
 using SlatedGameToolkit.Framework.Graphics.Window;
 
-namespace SkinnerBox.Entities
+namespace WebsiteSim.Entities
 {
     public class ServerEntity : Entity
     {

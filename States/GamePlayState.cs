@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
 using SDL2;
-using SkinnerBox.Entities;
+using WebsiteSim.Entities;
 using SlatedGameToolkit.Framework.AssetSystem;
 using SlatedGameToolkit.Framework.Graphics.Render;
 using SlatedGameToolkit.Framework.Graphics.Textures;
@@ -14,9 +14,9 @@ using SlatedGameToolkit.Framework.StateSystem.States;
 using SlatedGameToolkit.Framework.Utilities.Collections.Pooling;
 using SlatedGameToolkit.Framework.Utilities;
 using SlatedGameToolkit.Framework.Graphics.Text;
-using SkinnerBox.Utilities;
+using WebsiteSim.Utilities;
 
-namespace SkinnerBox.States
+namespace WebsiteSim.States
 {
     public class GamePlayState : IState
     {
@@ -102,7 +102,7 @@ namespace SkinnerBox.States
 
             packetSpawnInfo = new PacketSpawnInfo(2, 1, (float)(random.NextDouble() * Game.WIDTH_UNITS), 1f, 0.2f, 0.75f);
             downloadSpawnInfo = new DownloadSpawnInfo(4, 6, 3, 1, 4, 2);
-            dDOSSpawnInfo = new DDOSSPawnInfo(28, 3f, 2f, 245f);
+            dDOSSpawnInfo = new DDOSSPawnInfo(28, 3f, 2f, 200f);
             score = 0;
             timeElapsed.HardSet(0);
             server.Speed = 4;
@@ -245,14 +245,14 @@ namespace SkinnerBox.States
                 serverTargetPos = cursorWidthScale * Mouse.X;
             }
             
-            if (serverTargetPos < server.CenterX)
+            if (serverTargetPos < server.CenterX - 0.02f)
             {
                 server.CenterX -= ((float)timeStep * server.Speed);
-                if (server.CenterX < serverTargetPos) server.CenterX = serverTargetPos;
-            } else if (serverTargetPos > server.CenterX) 
+                if (server.CenterX < serverTargetPos - 0.02f) server.CenterX = serverTargetPos - 0.02f;
+            } else if (serverTargetPos > server.CenterX + 0.02f)
             {
                 server.CenterX += ((float)timeStep * server.Speed);
-                if (server.X > serverTargetPos) server.CenterX = serverTargetPos;
+                if (server.CenterX > serverTargetPos + 0.02f) server.CenterX = serverTargetPos + 0.02f;
             }                
             #endregion
             #region PacketUpdate
@@ -433,7 +433,7 @@ namespace SkinnerBox.States
                 if (packetSpawnInfo.jumpDistance > 2.25f) packetSpawnInfo.jumpDistance = 2.25f;
             }
             if (packetSpawnInfo.interval > 0f) {
-                packetSpawnInfo.interval = (float) (-0.0075 * timeElapsed.Value) + 2f;
+                packetSpawnInfo.interval = (float) (-0.007 * timeElapsed.Value) + 2f;
                 if (packetSpawnInfo.interval < 0f) packetSpawnInfo.interval = 0f;
             }
 
