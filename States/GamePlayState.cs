@@ -70,7 +70,7 @@ namespace SkinnerBox.States
         private int packetsReceived;
         private int totalPackets;
         private readonly float totalStability = 5;
-        private float stability;
+        private float health;
         private RectangleMesh stabilityMesh;
         #endregion
 
@@ -105,7 +105,7 @@ namespace SkinnerBox.States
             server.Speed = 4;
             bandwithBoost = 0;
             speedBoost = 3;
-            stability = totalStability;
+            health = totalStability;
             packetsReceived = 0;
             totalPackets = 0;
             downloadsServed = 0;
@@ -113,6 +113,11 @@ namespace SkinnerBox.States
 
             this.font.PixelHeight = 32;
             font.PrepareCharacterGroup("Score:0123456789Uptim.%".ToCharArray());
+
+            activePackets.Clear();
+            activeWarnings.Clear();
+            activeDownloads.Clear();
+            activeDDOS.Clear();
             return true;
         }
 
@@ -196,7 +201,7 @@ namespace SkinnerBox.States
                         renderer.Draw(speedMesh);
                     }
                 }
-                float normalizedHealth = stability / totalStability;
+                float normalizedHealth = health / totalStability;
                 int red = (int) (byte.MaxValue * normalizedHealth);
                 stabilityMesh.Color = Color.FromArgb(red, 0, 0);
                 renderer.Draw(stabilityMesh);
@@ -268,7 +273,7 @@ namespace SkinnerBox.States
                     packet.Color = Color.Cyan;
                 }
                 if (packet.Y <= 0 - packet.Height) {
-                    stability -= 0.5f;
+                    health -= 0.25f;
                     packetPool.Release(packet);
                     activePackets.RemoveAt(i);
                     i--;
@@ -277,7 +282,7 @@ namespace SkinnerBox.States
                 if (packet.Y >= Game.HEIGHT_UNITS && packet.velocity < 0) {
                     score += -2 * packet.velocity;
                     packetsReceived++;
-                    stability += 0.025f;
+                    health += 0.025f;
                     packetPool.Release(packet);
                     activePackets.RemoveAt(i);
                     i--;
@@ -334,7 +339,7 @@ namespace SkinnerBox.States
                 }
                 if (download.timeElapsed.Value >= download.upTime)
                 {
-                    stability -= 1.5f;
+                    health -= 1.5f;
                     downloadPool.Release(download);
                     activeDownloads.RemoveAt(i);
                     i--;
@@ -366,7 +371,7 @@ namespace SkinnerBox.States
                 DDOSEntity ddos = activeDDOS[i];
                 ddos.Update((float)timeStep);
                 if (ddos.HitBox.IntersectsWith(server.HitBox)) {
-                    stability -= (float) (10f * timeStep);
+                    health -= (float) (10f * timeStep);
                 }
                 for (int p = 0; p < activePackets.Count; p++)
                 {
@@ -403,7 +408,7 @@ namespace SkinnerBox.States
             packetSpawnInfo.perSpawn = (int)(0.5f * (Math.Pow(timeElapsed.Value, 0.5f) + 1));
             packetSpawnInfo.speed = (float)((0.025f * Math.Pow(timeElapsed.Value, 1.1f)) + 1f);
             if (packetSpawnInfo.jumpDistance < 2f) {
-                packetSpawnInfo.jumpDistance = (float)(0.0018f * (Math.Pow(timeElapsed.Value, 1.1f)) + 0.75f);
+                packetSpawnInfo.jumpDistance = (float)(0.0023f * (Math.Pow(timeElapsed.Value, 1.15f)) + 0.75f);
                 if (packetSpawnInfo.jumpDistance > 2f) packetSpawnInfo.jumpDistance = 2f;
             }
             if (packetSpawnInfo.interval > 0f) {
@@ -427,11 +432,11 @@ namespace SkinnerBox.States
             //ddos curve
             #endregion
             #region BoundaryChecking
-            if (stability > totalStability) {
-                stability = totalStability;
-            } else if (stability <= 0)
+            if (health > totalStability) {
+                health = totalStability;
+            } else if (health <= 0)
             {
-                stability = 0;
+                health = 0;
                 gameOverState.SetStats((int)Math.Round(this.score), this.timeElapsed.Value, downloadsServed, totalDownloads, packetsReceived, totalPackets);
                 stateManager.ChangeState("GameOver");
             }
