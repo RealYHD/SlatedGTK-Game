@@ -1,5 +1,5 @@
 using System.Drawing;
-using SkinnerBox.Utilities.Gameplay;
+using SkinnerBox.Utilities;
 using SlatedGameToolkit.Framework.Graphics.Render;
 using SlatedGameToolkit.Framework.Graphics.Textures;
 using SlatedGameToolkit.Framework.Utilities.Collections.Pooling;

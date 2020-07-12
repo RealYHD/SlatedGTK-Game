@@ -2,7 +2,6 @@ using System;
 using System.Drawing;
 using System.Numerics;
 using SDL2;
-using SkinnerBox.States.Gameplay;
 using SlatedGameToolkit.Framework.AssetSystem;
 using SlatedGameToolkit.Framework.Graphics;
 using SlatedGameToolkit.Framework.Graphics.Render;
@@ -14,7 +13,7 @@ using SlatedGameToolkit.Framework.Loaders;
 using SlatedGameToolkit.Framework.StateSystem;
 using SlatedGameToolkit.Framework.StateSystem.States;
 
-namespace SkinnerBox.States.Main
+namespace SkinnerBox.States
 {
     public class MenuState : IState
     {
@@ -29,6 +28,12 @@ namespace SkinnerBox.States.Main
         public bool Activate()
         {
             Keyboard.keyboardUpdateEvent += KeyInput;
+            this.titleFont.PixelHeight = 120;
+            this.titleFont.PrepareCharacterGroup("You Are the Website.".ToCharArray());
+            this.titleFont.PixelHeight = 40;
+            this.titleFont.PrepareCharacterGroup("By: Reslate".ToCharArray());
+            boldFont.PixelHeight = 60;
+            boldFont.PrepareCharacterGroup("Press any key to start...".ToCharArray());
             return true;
         }
 
@@ -62,12 +67,17 @@ namespace SkinnerBox.States.Main
             this.camera.MoveTo = this.camera.Position;
             this.renderer = new MeshBatchRenderer(camera);
 
-            //Add additional states
+            //Set up title TTF
+            this.titleFont = new BitmapFont("resources/BigShouldersDisplay-Regular.ttf", textureSizes: 512);
+            this.titleFont.PixelsPerUnitHeight = 80;
+            this.titleFont.PixelsPerUnitWidth = 80;
             BitmapFont genericFont = new BitmapFont("resources/BigShouldersDisplay-Light.ttf");
             genericFont.PixelsPerUnitHeight = 80;
             genericFont.PixelsPerUnitWidth = 80;
-            genericFont.PixelHeight = 32;
-            manager.AddState(new GamePlayState(renderer, this.assets, genericFont));
+            //Add additional states
+            GameOverState gameOverState = new GameOverState(genericFont, titleFont, renderer, assets);
+            manager.AddState(gameOverState);
+            manager.AddState(new GamePlayState(renderer, this.assets, genericFont, gameOverState));
 
             //Load assets
             assets.Load("serverunit.png");
@@ -76,22 +86,14 @@ namespace SkinnerBox.States.Main
             assets.Load("downloadbar.png");
             assets.Load("drag.png");
             assets.Load("usage.png");
+            assets.Load("health.png");
+            assets.Load("ram.png");
 
-            //Set up title TTF
-            this.titleFont = new BitmapFont("resources/BigShouldersDisplay-Regular.ttf", textureSizes: 512);
-            this.titleFont.PixelHeight = 120;
-            this.titleFont.PixelsPerUnitHeight = 80;
-            this.titleFont.PixelsPerUnitWidth = 80;
-            this.titleFont.PrepareCharacterGroup("You Are the Website.".ToCharArray());
-            this.titleFont.PixelHeight = 40;
-            this.titleFont.PrepareCharacterGroup("By: Reslate".ToCharArray());
 
             //Set up bold TTF
             boldFont = new BitmapFont("resources/BigShouldersDisplay-Black.ttf", textureSizes: 512);
-            boldFont.PixelHeight = 60;
             boldFont.PixelsPerUnitWidth = 80;
             boldFont.PixelsPerUnitHeight = 80;
-            boldFont.PrepareCharacterGroup("Press any key to start...".ToCharArray());
 
             //Set up icon
             Texture serverUnitTex = (Texture)assets["serverunit.png"];

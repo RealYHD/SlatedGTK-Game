@@ -14,8 +14,9 @@ using SlatedGameToolkit.Framework.StateSystem.States;
 using SlatedGameToolkit.Framework.Utilities.Collections.Pooling;
 using SlatedGameToolkit.Framework.Utilities;
 using SlatedGameToolkit.Framework.Graphics.Text;
+using SkinnerBox.Utilities;
 
-namespace SkinnerBox.States.Gameplay
+namespace SkinnerBox.States
 {
     public class GamePlayState : IState
     {
@@ -23,6 +24,7 @@ namespace SkinnerBox.States.Gameplay
         private AssetManager assets;
         private StateManager stateManager;
         private BitmapFont font;
+        private GameOverState gameOverState;
         private Random random;
 
         #region CursorVars
@@ -52,14 +54,22 @@ namespace SkinnerBox.States.Gameplay
         #endregion
         
         #region PlayerStats
-        private readonly int totalUsage = 3;
-        private int usedUsage = 0;
-        private RectangleMesh usageMesh;
-        private int score;
-        private float timeElapsed;
+        private int speedBoost = 0;
+        private int bandwithBoost = 0;
+        private RectangleMesh bandwithMesh;
+        private RectangleMesh speedMesh;
+        private float score;
+        private TransitionValue timeElapsed;
+        private int downloadsServed;
+        private int totalDownloads;
+        private int packetsReceived;
+        private int totalPackets;
+        private readonly float totalStability = 5;
+        private float stability;
+        private RectangleMesh stabilityMesh;
         #endregion
 
-        public GamePlayState(MeshBatchRenderer renderer, AssetManager asset, BitmapFont font)
+        public GamePlayState(MeshBatchRenderer renderer, AssetManager asset, BitmapFont font, GameOverState gameOverState)
         {
             this.assets = asset;
             this.renderer = renderer;
@@ -67,7 +77,7 @@ namespace SkinnerBox.States.Gameplay
             warningPool = new ObjectPool<WarningEntity>(createWarning);
             downloadPool = new ObjectPool<DownloadEntity>(createDownload);
             this.font = font;
-            font.PrepareCharacterGroup("score:0123456789timlapsd".ToCharArray());
+            this.gameOverState = gameOverState;
         }
 
         public bool Activate()
@@ -76,11 +86,26 @@ namespace SkinnerBox.States.Gameplay
             Mouse.mouseUpdateEvent += MouseInput;
             serverTargetPos = 0.5f * Game.WIDTH_UNITS;
             server = new ServerEntity((Texture)assets["serverunit.png"], serverTargetPos, 0.1f);
-            usageMesh = new RectangleMesh(new RectangleF(0, Game.HEIGHT_UNITS - 0.75f, 0.5f, 0.5f), (ITexture)assets["usage.png"], Color.White);
+            bandwithMesh = new RectangleMesh(new RectangleF(0, Game.HEIGHT_UNITS - 0.75f, 0.5f, 0.5f), (ITexture)assets["serverunit.png"], Color.White);
+            stabilityMesh = new RectangleMesh(new RectangleF(0.05f, Game.HEIGHT_UNITS - 3.2f, 0.5f, 0.5f), (ITexture)assets["health.png"], Color.White);
+            speedMesh = new RectangleMesh(bandwithMesh.Bounds, (ITexture)assets["ram.png"], Color.White);
             random = new Random();
 
-            packetSpawnInfo = new PacketSpawnInfo(2, 1, (float)(random.NextDouble() * Game.WIDTH_UNITS), 1f, 0.2f, 3f);
+            packetSpawnInfo = new PacketSpawnInfo(2, 1, (float)(random.NextDouble() * Game.WIDTH_UNITS), 1f, 0.2f, 2f);
             downloadSpawnInfo = new DownloadSpawnInfo(4, 6, 3, 1, 4, 2);
+            score = 0;
+            timeElapsed.HardSet(0);
+            server.Size = 4;
+            bandwithBoost = server.Size;
+            speedBoost = 0;
+            stability = totalStability;
+            packetsReceived = 0;
+            totalPackets = 0;
+            downloadsServed = 0;
+            totalDownloads = 0;
+
+            this.font.PixelHeight = 32;
+            font.PrepareCharacterGroup("Score:0123456789Uptim.%".ToCharArray());
             return true;
         }
 
@@ -145,24 +170,33 @@ namespace SkinnerBox.States.Gameplay
             renderer.Draw(server);
 
             #region StatusRender
-                for (int i = 0; i < totalUsage; i++)
+                for (int i = 0; i < bandwithBoost + speedBoost; i++)
                 {
-                    usageMesh.X = 0.25f + (i * (usageMesh.Width + 0.2f));
-                    if (i >= usedUsage) {
-                        usageMesh.Color = Color.Yellow;
+                    if (i < bandwithBoost) {
+                        bandwithMesh.X = 0.25f + (i * (bandwithMesh.Width + 0.2f));
+                        renderer.Draw(bandwithMesh);
                     } else {
-                        usageMesh.Color = Color.White;
+                        speedMesh.X = 0.25f + (i * (speedMesh.Width + 0.2f));
+                        renderer.Draw(speedMesh);
                     }
-                    renderer.Draw(usageMesh);
                 }
+                float normalizedHealth = stability / totalStability;
+                int red = (int) (byte.MaxValue * normalizedHealth);
+                stabilityMesh.Color = Color.FromArgb(red, 0, 0);
+                renderer.Draw(stabilityMesh);
+                font.WriteLine(renderer, stabilityMesh.Width + 0.1f, stabilityMesh.Y, Math.Round(100 * normalizedHealth, 1) + "%", Color.Red);
 
-                font.WriteLine(renderer, 0.05f, Game.HEIGHT_UNITS - 2f, "score: " + score, Color.Black);
+                timeElapsed.InterpolatePosition((float)delta);
+                font.WriteLine(renderer, 0.05f, Game.HEIGHT_UNITS - 1.75f, "Score: " + Math.Round(score, 0), Color.Black);
+                font.WriteLine(renderer, 0.05f, Game.HEIGHT_UNITS - 2.5f, "Uptime: " + Math.Round(timeElapsed.Value), Color.Black);
             #endregion
             renderer.End();
         }
 
         public void Update(double timeStep)
         {
+            timeElapsed.Value = (float)timeStep + timeElapsed.DesignatedValue;
+            score += (float) timeStep * 0.5f;
             #region ServerUpdate
             if (Mouse.LeftButtonPressed) {
                 serverTargetPos = cursorWidthScale * Mouse.X;
@@ -180,30 +214,33 @@ namespace SkinnerBox.States.Gameplay
             #endregion
             #region PacketUpdate
             packetSpawnInfo.timeElapsed += (float) timeStep;
-            if (packetSpawnInfo.timeElapsed >= packetSpawnInfo.period) {
+            if (packetSpawnInfo.timeElapsed >= packetSpawnInfo.interval) {
                 packetSpawnInfo.timeElapsed = 0;
                 //do spawning
                 for(int i = 0; i < packetSpawnInfo.perSpawn; i++) {
                     PacketEntity packet = packetPool.Retrieve();
                     packet.CenterX = packetSpawnInfo.batchLocation;
-                    packet.Y = i * packet.Height + packetSpawnInfo.distanceBetween + Game.HEIGHT_UNITS + packetSpawnInfo.speed * (2/3f);
+                    packet.Y = i * packet.Height + packetSpawnInfo.range + Game.HEIGHT_UNITS + packetSpawnInfo.speed * (2/3f);
                     packet.velocity = packetSpawnInfo.speed;
                     packet.Color = Color.Blue;
+                    totalPackets++;
                     activePackets.Add(packet);
                 }
 
                 //Spawn Warning
                 WarningEntity warning = warningPool.Retrieve();
                 warning.CenterX = packetSpawnInfo.batchLocation;
-                warning.LifeTime = packetSpawnInfo.period * (2/3f);
+                warning.LifeTime = packetSpawnInfo.interval * (2/3f);
                 warning.Y = Game.HEIGHT_UNITS - warning.Height;
                 activeWarnings.Add(warning);
 
                 //Prepare next batch
-                packetSpawnInfo.batchLocation = (float)(packetSpawnInfo.batchLocation + (random.NextDouble() - 1/2f) * packetSpawnInfo.jumpDistance * 2);
-                if (packetSpawnInfo.batchLocation > Game.WIDTH_UNITS - packetSafeMargin) {
-                    packetSpawnInfo.batchLocation = Game.WIDTH_UNITS - packetSafeMargin;
-                } else if (packetSpawnInfo.batchLocation < packetSafeMargin) packetSpawnInfo.batchLocation = packetSafeMargin;
+                float change = (float)((float)(random.NextDouble() - 1/2f) * packetSpawnInfo.jumpDistance * 2);
+                if (packetSpawnInfo.batchLocation + change > Game.WIDTH_UNITS - packetSafeMargin || packetSpawnInfo.batchLocation + change < packetSafeMargin) {
+                    packetSpawnInfo.batchLocation -= change;
+                } else {
+                    packetSpawnInfo.batchLocation += change;
+                }
             }
 
             for (int i = 0; i < activePackets.Count; i++)
@@ -215,15 +252,20 @@ namespace SkinnerBox.States.Gameplay
                     packet.Color = Color.Cyan;
                 }
                 if (packet.Y <= 0 - packet.Height) {
+                    stability -= 0.5f;
                     packetPool.Release(packet);
                     activePackets.RemoveAt(i);
                     i--;
                     continue;
                 }
                 if (packet.Y >= Game.HEIGHT_UNITS && packet.velocity < 0) {
+                    score += -2 * packet.velocity;
+                    packetsReceived++;
+                    stability += 0.05f;
                     packetPool.Release(packet);
                     activePackets.RemoveAt(i);
                     i--;
+                    continue;
                 }
             }
             #endregion
@@ -238,6 +280,7 @@ namespace SkinnerBox.States.Gameplay
                     download.Y = (float)(downloadSafeMargin + random.NextDouble() * (Game.HEIGHT_UNITS - 2 * downloadSafeMargin));
                     download.stepSize = downloadSpawnInfo.stepSize;
                     download.upTime = downloadSpawnInfo.upTime;
+                    totalDownloads++;
                     activeDownloads.Add(download);
 
                     WarningEntity warning = warningPool.Retrieve();
@@ -266,6 +309,8 @@ namespace SkinnerBox.States.Gameplay
                 
                 if (download.progressValue.Value >= download.Width)
                 {
+                    score += downloadSpawnInfo.maximumAmount * 2 + downloadSpawnInfo.sizeRange + 1f / downloadSpawnInfo.period + 2 * downloadSpawnInfo.stepSize;
+                    downloadsServed++;
                     downloadPool.Release(download);
                     activeDownloads.RemoveAt(i);
                     i--;
@@ -273,6 +318,7 @@ namespace SkinnerBox.States.Gameplay
                 }
                 if (download.timeElapsed.Value >= download.upTime)
                 {
+                    stability -= 1.5f;
                     downloadPool.Release(download);
                     activeDownloads.RemoveAt(i);
                     i--;
@@ -292,32 +338,63 @@ namespace SkinnerBox.States.Gameplay
                 }
             }
             #endregion
+            #region DifficultyUpdate
+            //packet curve
+            packetSpawnInfo.perSpawn = (int)(0.5f * (Math.Pow(timeElapsed.Value, 0.5f) + 1));
+            packetSpawnInfo.speed = (float)((0.025f * Math.Pow(timeElapsed.Value, 1.1f)) + 1f);
+            if (packetSpawnInfo.range < 4) {
+                packetSpawnInfo.range = (float)(0.1f * (Math.Pow(timeElapsed.Value, 1.15f)) + 2f);
+                if (packetSpawnInfo.range > 4) packetSpawnInfo.range = 4;
+            }
+            if (packetSpawnInfo.interval > 0.3f) {
+                packetSpawnInfo.interval = (float) (-0.0055 * timeElapsed.Value) + 2f;
+                if (packetSpawnInfo.interval < 0.3f) packetSpawnInfo.interval = 0.3f;
+            }
+
+            //download curve
+            if (downloadSpawnInfo.maximumAmount < 4) {
+                downloadSpawnInfo.maximumAmount = (int)(0.02f * timeElapsed.Value + 1);
+            }
+            if (downloadSpawnInfo.upTime > 3) {
+                downloadSpawnInfo.upTime = (float)(8 + (-0.1f * Math.Pow(timeElapsed.Value, 0.8f)));
+                if (downloadSpawnInfo.upTime < 3) downloadSpawnInfo.upTime = 3;
+            }
+            if (downloadSpawnInfo.period > 1.5f) {
+                downloadSpawnInfo.period = (float) (-0.006 * timeElapsed.Value) + 4;
+                if (packetSpawnInfo.interval < 1.5f) packetSpawnInfo.interval = 1.5f;
+            }
+            #endregion
+            #region BoundaryChecking
+            if (stability > totalStability) {
+                stability = totalStability;
+            } else if (stability <= 0)
+            {
+                stability = 0;
+                gameOverState.SetStats((int)Math.Round(this.score), this.timeElapsed.Value, downloadsServed, totalDownloads, packetsReceived, totalPackets);
+                stateManager.ChangeState("GameOver");
+            }
+            #endregion
         }
 
         public void KeyInputListener(SDL.SDL_Keycode keycode, bool down) {
             if (!down) return;
-            if (keycode == SDL.SDL_Keycode.SDLK_a) {
-                if (usedUsage > 0 && server.Size > 1) {
-                    usedUsage--;
+            int currentUsage = bandwithBoost + speedBoost;
+            if (keycode == SDL.SDL_Keycode.SDLK_SPACE) {
+                if (server.Size > 1) {
                     server.Size--;
-                }
-            }
-            if (keycode == SDL.SDL_Keycode.SDLK_d) {
-                if (usedUsage < totalUsage) {
-                    usedUsage++;
-                    server.Size++;
-                }
-            }
-            if (keycode == SDL.SDL_Keycode.SDLK_s) {
-                if (usedUsage > 0 && server.Speed > ServerEntity.MIN_SPEED) {
-                    usedUsage--;
-                    server.Speed -= ServerEntity.SPEED_STEP;
-                }
-            }
-            if (keycode == SDL.SDL_Keycode.SDLK_w) {
-                if (usedUsage < totalUsage) {
-                    usedUsage++;
+                    bandwithBoost--;
+
+                    speedBoost++;
                     server.Speed += ServerEntity.SPEED_STEP;
+                }
+            }
+            if (keycode == SDL.SDL_Keycode.SDLK_LSHIFT) {
+                if (server.Speed > ServerEntity.MIN_SPEED) {
+                    server.Speed -= ServerEntity.SPEED_STEP;
+                    speedBoost--;
+
+                    server.Size++;
+                    bandwithBoost++;
                 }
             }
         }

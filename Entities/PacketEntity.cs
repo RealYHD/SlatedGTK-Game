@@ -33,21 +33,21 @@ namespace SkinnerBox.Entities
     public struct PacketSpawnInfo
     {
         public float timeElapsed;
-        public int period;
+        public float interval;
         public int perSpawn;
         public float batchLocation;
-        public float distanceBetween;
+        public float range;
         public float jumpDistance;
         public float speed;
         public float lastSpawnLocation;
 
-        public PacketSpawnInfo(int period, int perSpawn, float location, float speed, float distance, float jump) {
+        public PacketSpawnInfo(float period, int perSpawn, float location, float speed, float distance, float jump) {
             timeElapsed = 0;
             lastSpawnLocation = 0;
-            this.period = period;
+            this.interval = period;
             this.perSpawn = perSpawn;
             this.batchLocation = location;
-            this.distanceBetween = distance;
+            this.range = distance;
             this.speed = speed;
             this.jumpDistance = jump;
         }
