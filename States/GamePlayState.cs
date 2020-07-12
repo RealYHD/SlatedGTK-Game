@@ -52,6 +52,11 @@ namespace SkinnerBox.States
         private DownloadSpawnInfo downloadSpawnInfo;
         private const float downloadSafeMargin = 1.5f;
         #endregion
+
+        //DDOS entities.
+        private ObjectPool<DDOSEntity> ddosPool;
+        private List<DDOSEntity> activeDDOS = new List<DDOSEntity>();
+        private DDOSSPawnInfo dDOSSpawnInfo;
         
         #region PlayerStats
         private int speedBoost = 0;
@@ -76,6 +81,7 @@ namespace SkinnerBox.States
             packetPool = new ObjectPool<PacketEntity>(CreatePacket);
             warningPool = new ObjectPool<WarningEntity>(createWarning);
             downloadPool = new ObjectPool<DownloadEntity>(createDownload);
+            ddosPool = new ObjectPool<DDOSEntity>(createDDOS);
             this.font = font;
             this.gameOverState = gameOverState;
         }
@@ -91,13 +97,14 @@ namespace SkinnerBox.States
             speedMesh = new RectangleMesh(bandwithMesh.Bounds, (ITexture)assets["ram.png"], Color.White);
             random = new Random();
 
-            packetSpawnInfo = new PacketSpawnInfo(2, 1, (float)(random.NextDouble() * Game.WIDTH_UNITS), 1f, 0.2f, 2f);
+            packetSpawnInfo = new PacketSpawnInfo(2, 1, (float)(random.NextDouble() * Game.WIDTH_UNITS), 1f, 0.2f, 0.75f);
             downloadSpawnInfo = new DownloadSpawnInfo(4, 6, 3, 1, 4, 2);
+            dDOSSpawnInfo = new DDOSSPawnInfo(28, 3f, 2f, 245f);
             score = 0;
             timeElapsed.HardSet(0);
-            server.Size = 4;
-            bandwithBoost = server.Size;
-            speedBoost = 0;
+            server.Speed = 4;
+            bandwithBoost = 0;
+            speedBoost = 3;
             stability = totalStability;
             packetsReceived = 0;
             totalPackets = 0;
@@ -119,6 +126,10 @@ namespace SkinnerBox.States
 
         public DownloadEntity createDownload() {
             return new DownloadEntity((Texture)assets["drag.png"], (Texture)assets["downloadbar.png"]);
+        }
+
+        public DDOSEntity createDDOS() {
+            return new DDOSEntity((Texture)assets["beam.png"]);
         }
 
         public bool Deactivate()
@@ -168,7 +179,12 @@ namespace SkinnerBox.States
             }                
             #endregion
             renderer.Draw(server);
-
+            #region DDOSRender
+            foreach (DDOSEntity ddos in activeDDOS)
+            {
+                renderer.Draw(ddos);
+            }
+            #endregion
             #region StatusRender
                 for (int i = 0; i < bandwithBoost + speedBoost; i++)
                 {
@@ -220,7 +236,7 @@ namespace SkinnerBox.States
                 for(int i = 0; i < packetSpawnInfo.perSpawn; i++) {
                     PacketEntity packet = packetPool.Retrieve();
                     packet.CenterX = packetSpawnInfo.batchLocation;
-                    packet.Y = i * packet.Height + packetSpawnInfo.range + Game.HEIGHT_UNITS + packetSpawnInfo.speed * (2/3f);
+                    packet.Y = i * packet.Height + packetSpawnInfo.range + Game.HEIGHT_UNITS + packetSpawnInfo.speed;
                     packet.velocity = packetSpawnInfo.speed;
                     packet.Color = Color.Blue;
                     totalPackets++;
@@ -230,12 +246,12 @@ namespace SkinnerBox.States
                 //Spawn Warning
                 WarningEntity warning = warningPool.Retrieve();
                 warning.CenterX = packetSpawnInfo.batchLocation;
-                warning.LifeTime = packetSpawnInfo.interval * (2/3f);
+                warning.LifeTime = 1f;
                 warning.Y = Game.HEIGHT_UNITS - warning.Height;
                 activeWarnings.Add(warning);
 
                 //Prepare next batch
-                float change = (float)((float)(random.NextDouble() - 1/2f) * packetSpawnInfo.jumpDistance * 2);
+                float change = (float)((random.NextDouble() - 1/2f) * packetSpawnInfo.jumpDistance * 2);
                 if (packetSpawnInfo.batchLocation + change > Game.WIDTH_UNITS - packetSafeMargin || packetSpawnInfo.batchLocation + change < packetSafeMargin) {
                     packetSpawnInfo.batchLocation -= change;
                 } else {
@@ -261,7 +277,7 @@ namespace SkinnerBox.States
                 if (packet.Y >= Game.HEIGHT_UNITS && packet.velocity < 0) {
                     score += -2 * packet.velocity;
                     packetsReceived++;
-                    stability += 0.05f;
+                    stability += 0.025f;
                     packetPool.Release(packet);
                     activePackets.RemoveAt(i);
                     i--;
@@ -276,7 +292,7 @@ namespace SkinnerBox.States
                 if (activeDownloads.Count < downloadSpawnInfo.maximumAmount) {
                     DownloadEntity download = downloadPool.Retrieve();
                     download.Size = (int)(downloadSpawnInfo.generalSize + ((random.NextDouble() - 1/2f) * 2f * downloadSpawnInfo.sizeRange));
-                    download.X = (float)(random.NextDouble() * (Game.WIDTH_UNITS - download.Width));
+                    download.X = (float)(random.NextDouble() * (Game.WIDTH_UNITS - download.Width - 2 * downloadSafeMargin) + downloadSafeMargin);
                     download.Y = (float)(downloadSafeMargin + random.NextDouble() * (Game.HEIGHT_UNITS - 2 * downloadSafeMargin));
                     download.stepSize = downloadSpawnInfo.stepSize;
                     download.upTime = downloadSpawnInfo.upTime;
@@ -326,6 +342,50 @@ namespace SkinnerBox.States
                 }
             }
             #endregion
+            #region DDOSUpdate
+            dDOSSpawnInfo.timeRemaining -= (float)timeStep;
+            if (dDOSSpawnInfo.timeRemaining <= 0) {
+                dDOSSpawnInfo.timeRemaining = (float)(dDOSSpawnInfo.interval + random.NextDouble() * dDOSSpawnInfo.intervalDeviation);
+                DDOSEntity ddos = ddosPool.Retrieve();
+                ddos.Initialize(server.CenterX, 1.5f * Game.HEIGHT_UNITS, dDOSSpawnInfo.speed, 2f);
+                activeDDOS.Add(ddos);
+
+                for (int i = 0; i < 4; i++)
+                {
+                    //Spawn Warning
+                    WarningEntity warning = warningPool.Retrieve();
+                    warning.CenterX = ddos.CenterX;
+                    warning.LifeTime = 1f;
+                    warning.Y = Game.HEIGHT_UNITS - i * (warning.Height + 1f);
+                    activeWarnings.Add(warning);
+
+                }
+            }
+            for (int i = 0; i < activeDDOS.Count; i++)
+            {
+                DDOSEntity ddos = activeDDOS[i];
+                ddos.Update((float)timeStep);
+                if (ddos.HitBox.IntersectsWith(server.HitBox)) {
+                    stability -= (float) (10f * timeStep);
+                }
+                for (int p = 0; p < activePackets.Count; p++)
+                {
+                    PacketEntity packet = activePackets[p];
+                    if (packet.velocity > 0 && ddos.HitBox.IntersectsWith(packet.HitBox)) {
+                        activePackets.RemoveAt(p);
+                        packetPool.Release(packet);
+                        p--;
+                    }
+                }
+
+                if (ddos.Y <= 0 - ddos.Height) {
+                    ddosPool.Release(ddos);
+                    activeDDOS.RemoveAt(i);
+                    i--;
+                    continue;
+                }
+            }
+            #endregion
             #region WarningCleanup
             for (int i = 0; i < activeWarnings.Count; i++)
             {
@@ -342,27 +402,29 @@ namespace SkinnerBox.States
             //packet curve
             packetSpawnInfo.perSpawn = (int)(0.5f * (Math.Pow(timeElapsed.Value, 0.5f) + 1));
             packetSpawnInfo.speed = (float)((0.025f * Math.Pow(timeElapsed.Value, 1.1f)) + 1f);
-            if (packetSpawnInfo.range < 4) {
-                packetSpawnInfo.range = (float)(0.1f * (Math.Pow(timeElapsed.Value, 1.15f)) + 2f);
-                if (packetSpawnInfo.range > 4) packetSpawnInfo.range = 4;
+            if (packetSpawnInfo.jumpDistance < 2f) {
+                packetSpawnInfo.jumpDistance = (float)(0.0018f * (Math.Pow(timeElapsed.Value, 1.1f)) + 0.75f);
+                if (packetSpawnInfo.jumpDistance > 2f) packetSpawnInfo.jumpDistance = 2f;
             }
-            if (packetSpawnInfo.interval > 0.3f) {
-                packetSpawnInfo.interval = (float) (-0.0055 * timeElapsed.Value) + 2f;
-                if (packetSpawnInfo.interval < 0.3f) packetSpawnInfo.interval = 0.3f;
+            if (packetSpawnInfo.interval > 0f) {
+                packetSpawnInfo.interval = (float) (-0.0075 * timeElapsed.Value) + 2f;
+                if (packetSpawnInfo.interval < 0f) packetSpawnInfo.interval = 0f;
             }
 
             //download curve
-            if (downloadSpawnInfo.maximumAmount < 4) {
+            if (downloadSpawnInfo.maximumAmount < 5) {
                 downloadSpawnInfo.maximumAmount = (int)(0.02f * timeElapsed.Value + 1);
             }
             if (downloadSpawnInfo.upTime > 3) {
                 downloadSpawnInfo.upTime = (float)(8 + (-0.1f * Math.Pow(timeElapsed.Value, 0.8f)));
                 if (downloadSpawnInfo.upTime < 3) downloadSpawnInfo.upTime = 3;
             }
-            if (downloadSpawnInfo.period > 1.5f) {
+            if (downloadSpawnInfo.period > 1f) {
                 downloadSpawnInfo.period = (float) (-0.006 * timeElapsed.Value) + 4;
-                if (packetSpawnInfo.interval < 1.5f) packetSpawnInfo.interval = 1.5f;
+                if (packetSpawnInfo.interval < 1f) packetSpawnInfo.interval = 1f;
             }
+
+            //ddos curve
             #endregion
             #region BoundaryChecking
             if (stability > totalStability) {

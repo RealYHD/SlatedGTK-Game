@@ -33,7 +33,7 @@ namespace SkinnerBox.States
             this.titleFont.PixelHeight = 40;
             this.titleFont.PrepareCharacterGroup("By: Reslate".ToCharArray());
             boldFont.PixelHeight = 60;
-            boldFont.PrepareCharacterGroup("Press any key to start...".ToCharArray());
+            boldFont.PrepareCharacterGroup("Press space to start...".ToCharArray());
             return true;
         }
 
@@ -87,8 +87,11 @@ namespace SkinnerBox.States
             assets.Load("drag.png");
             assets.Load("usage.png");
             assets.Load("health.png");
+            assets.Load("beam.png");
             assets.Load("ram.png");
 
+            Texture downloadBarTex = (Texture)assets["downloadbar.png"];
+            downloadBarTex.SetNearestFilter(true, true);
 
             //Set up bold TTF
             boldFont = new BitmapFont("resources/BigShouldersDisplay-Black.ttf", textureSizes: 512);
@@ -114,7 +117,7 @@ namespace SkinnerBox.States
 
             renderer.Draw(serverUnit);
             
-            this.boldFont.WriteLine(renderer, 1.15f, Game.HEIGHT_UNITS / 2, "Press any key to start...", Color.Black);
+            this.boldFont.WriteLine(renderer, 1.15f, Game.HEIGHT_UNITS / 2, "Press space to start...", Color.Black);
             renderer.End();
         }
 
@@ -124,7 +127,7 @@ namespace SkinnerBox.States
 
         public void KeyInput(SDL.SDL_Keycode keys, bool pressed)
         {
-            if (pressed)
+            if (!pressed && keys == SDL.SDL_Keycode.SDLK_SPACE)
             {
                 manager.ChangeState("GamePlayState");
             }

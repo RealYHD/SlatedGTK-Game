@@ -9,7 +9,7 @@ namespace SkinnerBox.Entities
     public class DownloadEntity : Entity, IPoolable
     {
         private readonly float unitSize = 1/2f;
-        private readonly float unitPerProgressTexture = 0.5f;
+        private readonly float unitPerProgressTexture = 0.4f;
         public float stepSize;
         public TransitionValue progressValue;
         public RectangleMesh progressMesh;
@@ -53,7 +53,7 @@ namespace SkinnerBox.Entities
         public void Reset()
         {
             Size = 1;
-            progressValue.HardSet(0);
+            progressValue.HardSet(0.1f);
             timeElapsed.HardSet(0);
             stepSize = 0;
             upTime = 0;

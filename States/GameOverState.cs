@@ -1,9 +1,11 @@
 using System;
 using System.Drawing;
 using System.Numerics;
+using SDL2;
 using SlatedGameToolkit.Framework.AssetSystem;
 using SlatedGameToolkit.Framework.Graphics.Render;
 using SlatedGameToolkit.Framework.Graphics.Text;
+using SlatedGameToolkit.Framework.Input.Devices;
 using SlatedGameToolkit.Framework.StateSystem;
 using SlatedGameToolkit.Framework.StateSystem.States;
 
@@ -35,11 +37,13 @@ namespace SkinnerBox.States
             titleFont.PrepareCharacterGroup("GameOvr!".ToCharArray());
             this.font.PixelHeight = 48;
             font.PrepareCharacterGroup("01234567890.Your Stats: Score,ServerUp-timedownloadservedpacketssentWebsitePDRLN%que".ToCharArray());
+            Keyboard.keyboardUpdateEvent += KeyChanged;
             return true;
         }
 
         public bool Deactivate()
         {
+            Keyboard.keyboardUpdateEvent -= KeyChanged;
             return true;
         }
 
@@ -66,7 +70,7 @@ namespace SkinnerBox.States
             font.WriteLine(renderer, 1.95f, Game.HEIGHT_UNITS * 0.46f, "Packets Received: " + totalPackets + " Packet Loss: " + Math.Round((100f * (1f - ((float) packetsReceived / totalPackets))), 1) + "%", Color.Black);
             font.WriteLine(renderer, 1.95f, Game.HEIGHT_UNITS * 0.39f, "Downloads Served: " + downloadsServed, Color.Black);
             font.WriteLine(renderer, 1.95f, Game.HEIGHT_UNITS * 0.32f, "Downloads Requested: " + totalDownloads, Color.Black);
-
+            font.WriteLine(renderer, 1.5f, 1.5f, "Press space to reset...", Color.Black);
             renderer.End();
         }
 
@@ -81,6 +85,12 @@ namespace SkinnerBox.States
 
         public void Update(double timeStep)
         {
+        }
+
+        public void KeyChanged(SDL.SDL_Keycode keycode, bool pressed) {
+            if (keycode == SDL.SDL_Keycode.SDLK_SPACE && !pressed) {
+                manager.ChangeState("Main");
+            }
         }
     }
 }
