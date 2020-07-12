@@ -234,14 +234,14 @@ namespace WebsiteSim.States
                 serverTargetPos = cursorWidthScale * Mouse.X;
             }
             
-            if (serverTargetPos < server.CenterX - 0.02f)
+            if (serverTargetPos < serverEntity.CenterX - 0.02f)
             {
-                server.CenterX -= ((float)timeStep * server.Speed);
-                if (server.CenterX < serverTargetPos - 0.02f) server.CenterX = serverTargetPos - 0.02f;
-            } else if (serverTargetPos > server.CenterX + 0.02f)
+                serverEntity.CenterX -= ((float)timeStep * serverEntity.Speed);
+                if (serverEntity.CenterX < serverTargetPos - 0.02f) serverEntity.CenterX = serverTargetPos - 0.02f;
+            } else if (serverTargetPos > serverEntity.CenterX + 0.02f)
             {
-                server.CenterX += ((float)timeStep * server.Speed);
-                if (server.CenterX > serverTargetPos + 0.02f) server.CenterX = serverTargetPos + 0.02f;
+                serverEntity.CenterX += ((float)timeStep * serverEntity.Speed);
+                if (serverEntity.CenterX > serverTargetPos + 0.02f) serverEntity.CenterX = serverTargetPos + 0.02f;
             }                
             #endregion
             #region WarningCleanup
