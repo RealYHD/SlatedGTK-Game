@@ -428,9 +428,9 @@ namespace SkinnerBox.States
             //packet curve
             packetSpawnInfo.perSpawn = (int)(0.5f * (Math.Pow(timeElapsed.Value, 0.5f) + 1));
             packetSpawnInfo.speed = (float)((0.025f * Math.Pow(timeElapsed.Value, 1.1f)) + 1f);
-            if (packetSpawnInfo.jumpDistance < 2.2f) {
+            if (packetSpawnInfo.jumpDistance < 2.25f) {
                 packetSpawnInfo.jumpDistance = (float)(0.0023f * (Math.Pow(timeElapsed.Value, 1.15f)) + 1f);
-                if (packetSpawnInfo.jumpDistance > 2.2f) packetSpawnInfo.jumpDistance = 2.2f;
+                if (packetSpawnInfo.jumpDistance > 2.25f) packetSpawnInfo.jumpDistance = 2.25f;
             }
             if (packetSpawnInfo.interval > 0f) {
                 packetSpawnInfo.interval = (float) (-0.0075 * timeElapsed.Value) + 2f;

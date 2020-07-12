@@ -22,7 +22,7 @@ namespace SkinnerBox.States
         AssetManager assets;
         Camera2D camera;
         MeshBatchRenderer renderer;
-        BitmapFont titleFont, boldFont;
+        BitmapFont titleFont;
         RectangleMesh serverUnit;
         private BitmapFont genericFont;
 
@@ -30,11 +30,10 @@ namespace SkinnerBox.States
         {
             Keyboard.keyboardUpdateEvent += KeyInput;
             this.titleFont.PixelHeight = 120;
-            this.titleFont.PrepareCharacterGroup("You Are the Website.".ToCharArray());
+            this.titleFont.PrepareCharacterGroup("Website Simulator".ToCharArray());
             this.titleFont.PixelHeight = 40;
-            this.titleFont.PrepareCharacterGroup("By: Reslate".ToCharArray());
-            boldFont.PixelHeight = 60;
-            boldFont.PrepareCharacterGroup("Press space to start...".ToCharArray());
+            this.titleFont.PrepareCharacterGroup("How it feels to be on the other end...".ToCharArray());
+            this.titleFont.PrepareCharacterGroup("Press space to start...".ToCharArray());
             return true;
         }
 
@@ -47,7 +46,6 @@ namespace SkinnerBox.States
         public void Deinitialize()
         {
             titleFont.Dispose();
-            boldFont.Dispose();
             genericFont.Dispose();
             this.renderer.Dispose();
             this.assets.UnloadAll();
@@ -61,8 +59,8 @@ namespace SkinnerBox.States
         public void Initialize(StateManager manager)
         {
             this.manager = manager;
-            this.manager.backgroundColour = Color.White;
-            this.context = new WindowContext("You Are the Website", width: 640, height: 640, options: SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN);
+            this.manager.backgroundColour = Color.LightGray;
+            this.context = new WindowContext("Website Simulator", width: 640, height: 640, options: SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN);
             this.assets = new AssetManager();
             this.assets.DefaultPathModifier = (p) => "resources/" + p;
             this.assets.Loaders.TryAdd("png", TextureLoader.Load2DTexture);
@@ -98,15 +96,10 @@ namespace SkinnerBox.States
             Texture downloadBarTex = (Texture)assets["downloadbar.png"];
             downloadBarTex.SetNearestFilter(true, true);
 
-            //Set up bold TTF
-            boldFont = new BitmapFont("resources/BigShouldersDisplay-Black.ttf", textureSizes: 512);
-            boldFont.PixelsPerUnitWidth = 80;
-            boldFont.PixelsPerUnitHeight = 80;
-
             //Set up icon
             Texture serverUnitTex = (Texture)assets["serverunit.png"];
             serverUnitTex.SetNearestFilter(true, true);
-            this.serverUnit = new RectangleMesh(new RectangleF(Game.WIDTH_UNITS/2 - 0.75f, Game.HEIGHT_UNITS * 0.75f - 0.75f, 1.5f, 1.5f), serverUnitTex, Color.White);
+            this.serverUnit = new RectangleMesh(new RectangleF(Game.WIDTH_UNITS/2 - 0.75f, Game.HEIGHT_UNITS * 0.5f - 0.75f, 1.5f, 1.5f), serverUnitTex, Color.White);
             
             this.context.Shown = true;
         }
@@ -115,14 +108,14 @@ namespace SkinnerBox.States
         {
             renderer.Begin(Matrix4x4.Identity, delta);
             this.titleFont.PixelHeight = 120;
-            this.titleFont.WriteLine(renderer, 0.02f, 0.02f, "You Are the Website.", Color.Black);
+            this.titleFont.WriteLine(renderer, 0.02f, 0.02f, "Website Simulator", Color.Black);
 
             this.titleFont.PixelHeight = 40;
-            this.titleFont.WriteLine(renderer, 0, 1.2f, "By: Reslate", Color.Gray);
+            this.titleFont.WriteLine(renderer, 0, 1.2f, "How it feels to be on the other end...", Color.Gray);
 
             renderer.Draw(serverUnit);
             
-            this.boldFont.WriteLine(renderer, 1.15f, Game.HEIGHT_UNITS / 2, "Press space to start...", Color.Black);
+            this.titleFont.WriteLine(renderer, Game.WIDTH_UNITS / 2f - 1.25f, Game.HEIGHT_UNITS / 2f + 1f, "Press space to start...", Color.Black);
             renderer.End();
         }
 
